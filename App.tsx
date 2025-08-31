@@ -1,45 +1,47 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
+ * Affirmation App - A React Native app for daily positive affirmations
+ * Features: Daily affirmations, favorites, premium subscription, push notifications
  *
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { StatusBar, useColorScheme } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { NotificationService } from './src/services/notifications';
+import { OpenAIService } from './src/services/openai';
+import { MockRevenueCatService } from './src/services/revenuecat';
+import { COLORS } from './src/constants/theme';
+
+// Configure services
+const initializeServices = async () => {
+  // Initialize notifications
+  NotificationService.initialize();
+
+  // Initialize RevenueCat with a mock API key
+  await MockRevenueCatService.initialize('mock_api_key');
+
+  // Set OpenAI API key if available (for now using mock/fallback)
+  // OpenAIService.setApiKey(process.env.OPENAI_API_KEY || '');
+};
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
+  useEffect(() => {
+    initializeServices();
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar 
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={COLORS.BACKGROUND}
+      />
+      <AppNavigator />
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
