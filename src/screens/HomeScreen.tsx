@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { AffirmationCard } from '../components/AffirmationCard';
 import { Button } from '../components/Button';
+import { CategorySelector } from '../components/CategorySelector';
 import { COLORS, FONT_SIZES, SPACING } from '../constants/theme';
-import { DEFAULT_AFFIRMATIONS, FREE_DAILY_LIMIT, Affirmation } from '../constants/affirmations';
+import { DEFAULT_AFFIRMATIONS, FREE_DAILY_LIMIT, Affirmation, CategoryType } from '../constants/affirmations';
 import { StorageService } from '../utils/storage';
 import { OpenAIService } from '../services/openai';
 import { NotificationService } from '../services/notifications';
@@ -23,6 +24,7 @@ export const HomeScreen: React.FC = () => {
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType | undefined>();
   const fadeAnim = new Animated.Value(1);
 
   useEffect(() => {
@@ -116,20 +118,20 @@ export const HomeScreen: React.FC = () => {
       // Try to get AI-generated affirmation first, fallback to predefined
       let newAffirmationText: string;
       try {
-        newAffirmationText = await OpenAIService.generateAffirmation();
+        newAffirmationText = await OpenAIService.generateAffirmation(selectedCategory);
       } catch (error) {
         // Fallback to predefined affirmations
         const availableAffirmations = isPremium 
-          ? DEFAULT_AFFIRMATIONS 
-          : DEFAULT_AFFIRMATIONS.filter(a => !a.isPremium);
+          ? DEFAULT_AFFIRMATIONS.filter(a => !selectedCategory || a.category === selectedCategory)
+          : DEFAULT_AFFIRMATIONS.filter(a => !a.isPremium && (!selectedCategory || a.category === selectedCategory));
         const randomIndex = Math.floor(Math.random() * availableAffirmations.length);
-        newAffirmationText = availableAffirmations[randomIndex].text;
+        newAffirmationText = availableAffirmations[randomIndex]?.text || 'I am capable of amazing things.';
       }
 
       const newAffirmation: Affirmation = {
         id: `generated-${Date.now()}`,
         text: newAffirmationText,
-        category: 'motivation',
+        category: selectedCategory || 'motivation',
       };
 
       setTimeout(() => {
@@ -209,6 +211,14 @@ export const HomeScreen: React.FC = () => {
           </Text>
         )}
       </View>
+
+      {isPremium && (
+        <CategorySelector
+          selectedCategory={selectedCategory}
+          onCategorySelect={setSelectedCategory}
+          isPremium={isPremium}
+        />
+      )}
 
       {currentAffirmation && (
         <Animated.View style={[styles.cardContainer, { opacity: fadeAnim }]}>
